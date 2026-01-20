@@ -4,8 +4,8 @@ export class CaptchaShieldError extends Error {
     this.name = 'CaptchaShieldError';
     
     // Maintain proper stack trace for where our error was thrown (only available on V8)
-    if (Error.captureStackTrace) {
-      Error.captureStackTrace(this, CaptchaShieldError);
+    if ('captureStackTrace' in Error) {
+      (Error as any).captureStackTrace(this, CaptchaShieldError);
     }
   }
 }
