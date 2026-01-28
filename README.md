@@ -1,6 +1,68 @@
 # CaptchaShield
 
-Cloudflare Turnstile modal for web apps with strong customization and a cookie that suppresses the prompt until it expires. Bring your own UI or use the minimal default dialog.
+[![npm version](https://img.shields.io/npm/v/captchashield?color=0f9d58&label=npm)](https://www.npmjs.com/package/captchashield)
+[![npm downloads](https://img.shields.io/npm/dw/captchashield?color=0aa6d8)](https://www.npmjs.com/package/captchashield)
+[![bundle size](https://img.shields.io/bundlephobia/minzip/captchashield?label=min%2Bgzip)](https://bundlephobia.com/package/captchashield)
+[![types](https://img.shields.io/badge/TypeScript-ready-3178c6)](#api-surface)
+[![license](https://img.shields.io/badge/License-MIT-4caf50)](LICENSE)
+
+Cloudflare Turnstile modal for modern web apps. Drop-in UX, strict security defaults, and a cookie-based skip that keeps verified users out of the captcha tunnel.
+
+## Contents
+- [What is CaptchaShield?](#what-is-captchashield)
+- [How it works](#how-it-works-mermaid)
+- [Quick start](#quick-start)
+- [Config cheat sheet](#config-cheat-sheet)
+- [Recipes](#recipes)
+- [Security and accessibility](#security-and-accessibility)
+- [API surface](#api-surface)
+- [Scripts](#scripts)
+- [License](#license)
+
+## What is CaptchaShield?
+- Handles Turnstile loading, rendering, retries, and cleanup for you.
+- Optional backend verification step with timeouts and retries.
+- Skip logic via cookie or session so returning users breeze through.
+- Bring your own modal/markup or use the minimal default styles.
+- Integrity checks detect tampering (missing globals, removed widget, script SRI).
+
+## How it works (Mermaid)
+
+**Verification Path**
+
+```mermaid
+sequenceDiagram
+    participant User
+    participant App
+    participant CaptchaShield
+    participant Turnstile as Cloudflare Turnstile
+    participant Backend
+
+    User->>App: open() requested
+    App->>CaptchaShield: open()
+    CaptchaShield-->>App: skip? (cookie or session)
+    alt already verified
+        CaptchaShield-->>App: resolve {status: "already-verified", reason}
+    else render flow
+        CaptchaShield->>Turnstile: load script + render widget
+        Turnstile-->>CaptchaShield: token
+        CaptchaShield->>Backend: POST /verify { token }
+        Backend-->>CaptchaShield: 2xx accepted
+        CaptchaShield-->>App: resolve {status: "rendered"}
+        CaptchaShield-->>User: close modal + set cookie
+    end
+```
+
+**Skip Cookie Lifecycle**
+
+```mermaid
+stateDiagram-v2
+    [*] --> Unverified
+    Unverified --> VerifiedCookie : verify success
+    VerifiedCookie --> VerifiedSession : optional session handoff
+    VerifiedCookie --> Unverified : cookie expired or reset()
+    VerifiedSession --> Unverified : destroy() or session cleared
+```
 
 ## Quick start
 
@@ -21,38 +83,32 @@ const shield = createCaptchaShield({
 shield.open();
 ```
 
-If the verification cookie is still valid, `open()` resolves without rendering. After a successful Turnstile callback the modal closes, sets the cookie, and gives you the token.
+`open()` resolves immediately when a valid cookie or session exists; otherwise the modal renders, verifies, then saves the skip cookie.
 
-## Configuration
+## Config cheat sheet
 
 - `siteKey` (required): Turnstile site key.
 - `action` / `cData`: Optional Turnstile parameters.
-- `turnstileScriptUrl`: Override the script URL. **Security Note:** Only use trusted URLs (defaults to official Cloudflare URL).
-- `cookie`: `{ name, maxAgeSeconds, path, domain, sameSite, secure, useScopePrefix, scopeId }` to control skip-cookie behavior.
-  - **Best Practice:** Default is `secure: true`, `sameSite: 'Lax'`. Do not downgrade these settings unless absolutely necessary (e.g. localhost development).
-- `modal`: copy (`title`, `body`, `helperText`), classes, custom CSS, `ariaLabel`, `closeOnVerify`, `injectDefaultStyle` (true by default).
-- `verify`: `{ endpoint, method, headers, timeoutMs, retries, buildBody, expectedStatus }`.
-  - **Security Note:** Use `method: 'POST'` (default) to send tokens in the body. Avoid `GET` to prevent token leakage in URL logs.
-- `statusCheck`: optional `{ endpoint, timeoutMs, expectedStatus }`.
+- `turnstileScriptUrl`: Override the loader URL. Prefer the official CDN.
+- `cookie`: `{ name, maxAgeSeconds, path, domain, sameSite, secure, useScopePrefix, scopeId }` controls skip-cookie scope and lifetime. Defaults: `secure: true`, `sameSite: "Lax"`.
+- `modal`: copy (`title`, `body`, `helperText`), classes, `ariaLabel`, `closeOnVerify`, `injectDefaultStyle`, `styles.customCss`.
+- `verify`: `{ endpoint, method, headers, timeoutMs, retries, buildBody, expectedStatus }` for server verification.
+- `statusCheck`: optional `{ endpoint, timeoutMs, expectedStatus }` preflight before rendering.
 - `integrity`: `{ scriptIntegrity, verifyTurnstileGlobal, enforceChallengePresence, monitorChallengeRemoval }`.
-  - `scriptIntegrity`: If you pin a specific version of Turnstile, provide the SRI hash here.
-  - `monitorChallengeRemoval`: Set to `true` to detect if the CAPTCHA widget is removed from the DOM by a malicious script or extension.
-- `render`: full custom renderer hook.
-- `onVerified(token)`, `onError(error)`: lifecycle hooks.
-- `modal.styles.customCss`: **Warning:** This injects a `<style>` tag. Do not pass user-generated content (e.g. from URL params) to this field to avoid CSS injection attacks.
+- `render`: fully custom renderer hook.
+- Hooks: `onVerified(token)`, `onError(error)`.
 
-### Security Best Practices
+### Security best practices
 
-1.  **Server-Side Verification:** Always verify the token on your backend using Cloudflare's `siteverify` API. The frontend cookie check is a UX optimization (skip), not a security gate.
-2.  **HTTPS:** CaptureShield sets `Secure` cookies by default. Ensure your site is served over HTTPS.
-3.  **Content Security Policy (CSP):** Ensure your CSP allows:
-    - `script-src`: `https://challenges.cloudflare.com`
-    - `frame-src`: `https://challenges.cloudflare.com`
+1) Server verification: Always hit Cloudflare `siteverify` on your backend; the cookie is UX only.  
+2) HTTPS everywhere: Defaults set `Secure` cookies; keep it that way outside localhost.  
+3) CSP: Allow `script-src` and `frame-src` `https://challenges.cloudflare.com`.  
+4) POST tokens: Keep tokens out of URLs by using POST (default) for `verify`.  
+5) CSS injection: Never pass user-generated CSS into `modal.styles.customCss`.  
 
+## Recipes
 
 ### Custom renderer
-
-Provide your own modal or inline UI via `render`:
 
 ```ts
 const shield = createCaptchaShield({
@@ -78,7 +134,7 @@ const shield = createCaptchaShield({
 shield.open();
 ```
 
-You control all markup and styling; CaptchaShield only mounts Turnstile into the provided `challengeContainer`. The library still manages Turnstile loading, callbacks, cookies, and state.
+You control the DOM; CaptchaShield mounts Turnstile, manages lifecycle, retries, cookies, and teardown.
 
 ### Auto-verify to backend
 
@@ -96,11 +152,9 @@ const shield = createCaptchaShield({
 await shield.open();
 ```
 
-The modal closes and sets the cookie only if the backend responds with the expected status (default: any 2xx). On failure, the widget is reset and `onError` fires so you can surface an error message.
+The modal closes and sets the cookie only when the backend responds with the expected status (default: any 2xx). On failure, the widget resets and `onError` fires.
 
-### Multi-site / Subdomain usage
-
-Use separate cookies per area, or share across subdomains via cookie settings:
+### Multi-site or subdomain usage
 
 ```ts
 createCaptchaShield({
@@ -114,85 +168,57 @@ createCaptchaShield({
 });
 ```
 
-### Integrity / anti-tamper
+### Integrity and anti-tamper
 
-- `integrity.scriptIntegrity`: sets SRI hash + `crossorigin="anonymous"` on the Turnstile script.
+- `integrity.scriptIntegrity`: sets SRI hash and `crossorigin="anonymous"` on the Turnstile script.
 - `integrity.verifyTurnstileGlobal`: ensure `window.turnstile.render` exists.
 - `integrity.enforceChallengePresence`: error if the challenge container disappears during mount.
-- `integrity.monitorChallengeRemoval`: watches for removal of the challenge node and triggers `onError` + cleanup.
+- `integrity.monitorChallengeRemoval`: watches for removal of the challenge node and triggers `onError` plus cleanup.
 
-## Configuration Templates
+### Configuration templates
 
-### 1. Strict Security (Production)
-Use this for sensitive production environments. It enforces HTTPS, strict cookies, and integrity checks.
+**Strict security (production)**
 
 ```ts
 const strictConfig: ShieldConfig = {
   siteKey: '0x4AAAAAA...',
   cookie: {
     secure: true,
-    sameSite: 'Strict', // Only strict if you don't need cross-site navigation persistence
+    sameSite: 'Strict',
     path: '/',
-    maxAgeSeconds: 3600 // 1 hour short-lived session
+    maxAgeSeconds: 3600,
   },
   integrity: {
     verifyTurnstileGlobal: true,
     enforceChallengePresence: true,
     monitorChallengeRemoval: true,
-    // scriptIntegrity: 'sha384-...' // Optional: Pin specific Turnstile version SRI
+    // scriptIntegrity: 'sha384-...' // optional: pin Turnstile version
   },
   modal: {
-    styles: {
-       customCss: '' // No custom CSS to reduce injection risk
-    }
+    styles: { customCss: '' },
   },
   verify: {
-    method: 'POST', // Always use POST
-    endpoint: '/api/security/verify-captcha'
-  }
+    method: 'POST',
+    endpoint: '/api/security/verify-captcha',
+  },
 };
 ```
 
-### 2. Development / Localhost
-Use this for local testing where HTTPS might not be available.
+**Development / localhost**
 
 ```ts
 const devConfig: ShieldConfig = {
   siteKey: '1x00000000000000000000AA', // Cloudflare dummy sitekey always passes
   cookie: {
-    secure: false, // Allow http://localhost
+    secure: false,
     sameSite: 'Lax',
-    name: 'dev_captcha_verified'
+    name: 'dev_captcha_verified',
   },
   verify: {
-    // Mock endpoint or skip verification in dev
-    endpoint: undefined 
-  }
+    endpoint: undefined,
+  },
 };
 ```
-
-## Error Handling
-
-All errors thrown by **CaptchaShield** are instances of `CaptchaShieldError` and carry the prefix `[CaptchaShield]`.
-This ensures clear logs and helps distinguish library errors from application errors.
-
-- **Sanitization:** Error messages are sanitized to avoid leaking sensitive data (e.g., tokens, full response bodies) to the client console.
-- **Handling:** Listen to `onError` to handle failures gracefully.
-
-```ts
-const shield = createCaptchaShield({
-  // ...
-  onError: (error) => {
-    if (error instanceof CaptchaShieldError) {
-       console.error('Shield Error:', error.message); 
-       // e.g. "Shield Error: [CaptchaShield] Server verification rejected token"
-    }
-    // Show user-friendly toast notification
-    toaster.show('Verification failed. Please try again.');
-  }
-});
-```
-
 
 ### Minimal backend example (Express)
 
@@ -218,9 +244,16 @@ export async function verifyTurnstile(req: Request, res: Response) {
 }
 ```
 
+## Security and accessibility
+
+- Errors are typed: all errors extend `CaptchaShieldError` with prefix `[CaptchaShield]`.
+- Sanitized messages: no sensitive payloads (tokens, raw responses) leak into logs.
+- Accessibility: set `ariaLabel` or custom markup; default modal includes focus trapping and escape close.
+- CSP friendly: only external dependency is the Cloudflare Turnstile script and iframe.
+
 ## API surface
 
-`createCaptchaShield(config)` returns a controller with:
+`createCaptchaShield(config)` returns:
 
 - `open(): Promise<{ status: 'rendered' | 'already-verified'; reason?: 'cookie' | 'session' }>`
 - `close()`: remove the modal without clearing state.
@@ -231,17 +264,11 @@ export async function verifyTurnstile(req: Request, res: Response) {
 
 ## Scripts
 
-- `npm run dev` – tsup watch
-- `npm run build` – bundle ESM/CJS + types
-- `npm run test` – Vitest (jsdom)
-- `npm run lint` – ESLint (flat config)
-- `npm run typecheck` – TypeScript strict, no emit
-
-## Notes
-
-- **Security First:** Verification tokens must be validated server-side; the cookie only suppresses the prompt client-side.
-- **Zero-Trust:** Never trust the client. Always re-verify important actions on the server.
-- Default styles are minimal; set `injectDefaultStyle: false` when you supply your own CSS.
+- `npm run dev` - tsup watch
+- `npm run build` - bundle ESM/CJS plus types
+- `npm run test` - Vitest (jsdom)
+- `npm run lint` - ESLint (flat config)
+- `npm run typecheck` - TypeScript strict, no emit
 
 ## License
 
