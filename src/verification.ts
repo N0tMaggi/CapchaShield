@@ -41,7 +41,10 @@ async function requestVerification(token: string, verify: ResolvedVerifyOptions)
 
   if (verify.method === 'GET') {
     if (process.env.NODE_ENV !== 'production') {
-      console.warn('[CaptchaShield] Security Warning: Sending verification token via GET request. Tokens in URLs may be logged by servers or proxies. Use POST if possible.');
+      // eslint-disable-next-line no-console
+      console.warn(
+        '[CaptchaShield] Security Warning: Sending verification token via GET request. Tokens in URLs may be logged by servers or proxies. Use POST if possible.'
+      );
     }
     const urlWithQuery = appendTokenQuery(verify.endpoint ?? '', token);
     return fetchWithTimeout(urlWithQuery, init, verify.timeoutMs);

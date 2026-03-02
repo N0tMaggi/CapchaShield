@@ -1,4 +1,4 @@
-import { ResolvedIntegrityOptions, ResolvedShieldConfig, RendererHandle } from './types';
+import { ResolvedShieldConfig, RendererHandle } from './types';
 
 export interface RenderParams {
   challengeContainer: HTMLElement;
@@ -7,7 +7,6 @@ export interface RenderParams {
 }
 
 export function renderDefaultModal({ challengeContainer, config }: RenderParams): RendererHandle {
-  const { integrity } = config;
   const overlay = document.createElement('div');
   const panel = document.createElement('div');
   const title = document.createElement('h2');
@@ -40,9 +39,9 @@ export function renderDefaultModal({ challengeContainer, config }: RenderParams)
   overlay.appendChild(panel);
 
   if (config.modal.injectDefaultStyle) {
-    injectStyle(defaultStyleSheet(config.modal.styles.customCss), integrity);
+    injectStyle(defaultStyleSheet(config.modal.styles.customCss));
   } else if (config.modal.styles.customCss.trim().length > 0) {
-    injectStyle(config.modal.styles.customCss, integrity);
+    injectStyle(config.modal.styles.customCss);
   }
 
   return {
@@ -51,9 +50,9 @@ export function renderDefaultModal({ challengeContainer, config }: RenderParams)
   };
 }
 
-function injectStyle(css: string, integrity: ResolvedIntegrityOptions) {
+function injectStyle(css: string) {
   if (!css.trim()) return;
-  const attrValue = integrity.scriptIntegrity ? 'true' : 'true';
+  const attrValue = 'true';
   const existing = document.head.querySelector('style[data-captcha-shield-style="true"]');
   if (existing) {
     existing.textContent = css;
