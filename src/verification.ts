@@ -1,4 +1,4 @@
-import { appendTokenQuery, fetchWithTimeout, isExpectedStatus } from './network';
+import { fetchWithTimeout, isExpectedStatus } from './network';
 import { ResolvedStatusOptions, ResolvedVerifyOptions } from './types';
 import { CaptchaShieldError } from './errors';
 
@@ -38,17 +38,6 @@ async function requestVerification(token: string, verify: ResolvedVerifyOptions)
     method: verify.method,
     headers: verify.headers,
   };
-
-  if (verify.method === 'GET') {
-    if (process.env.NODE_ENV !== 'production') {
-      // eslint-disable-next-line no-console
-      console.warn(
-        '[CaptchaShield] Security Warning: Sending verification token via GET request. Tokens in URLs may be logged by servers or proxies. Use POST if possible.'
-      );
-    }
-    const urlWithQuery = appendTokenQuery(verify.endpoint ?? '', token);
-    return fetchWithTimeout(urlWithQuery, init, verify.timeoutMs);
-  }
 
   const body = verify.buildBody(token);
   if (body) {

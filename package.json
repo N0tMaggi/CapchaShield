@@ -1,7 +1,7 @@
 {
   "name": "captchashield",
   "version": "0.1.0",
-  "description": "Customizable Cloudflare Turnstile modal with cookie-based skip logic for web apps.",
+  "description": "Customizable Cloudflare Turnstile modal with secure defaults and optional client-cookie skip logic.",
   "license": "MIT",
   "type": "module",
   "main": "./dist/index.cjs",
@@ -21,6 +21,8 @@
   "scripts": {
     "build": "tsup",
     "dev": "tsup --watch",
+    "demo": "npm run build && npm run demo:serve",
+    "demo:serve": "node scripts/serve-demo.mjs",
     "typecheck": "tsc --noEmit",
     "lint": "eslint \"src/**/*.{ts,tsx}\"",
     "test": "vitest",

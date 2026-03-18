@@ -1,0 +1,180 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>CaptchaShield Demo</title>
+    <link rel="stylesheet" href="./styles.css" />
+  </head>
+  <body>
+    <div class="app-shell">
+      <header class="topbar">
+        <div class="topbar__content">
+          <div>
+            <h1>CaptchaShield Demo</h1>
+            <p>Local test surface for verification flow, cookie behavior, custom rendering, and tamper handling.</p>
+          </div>
+          <div class="toolbar">
+            <button id="open-default" class="button button--primary" type="button">Open default</button>
+            <button id="open-custom" class="button" type="button">Open custom</button>
+            <button id="reuse-instance" class="button" type="button">Reuse instance</button>
+          </div>
+        </div>
+      </header>
+
+      <main class="workspace">
+        <section class="panel">
+          <div class="panel__header">
+            <h2>Controls</h2>
+            <p>Change the scenario, then open the widget from the toolbar.</p>
+          </div>
+
+          <div class="form-grid">
+            <label class="field field--wide">
+              <span>Modal title</span>
+              <input id="title" type="text" value="Prove you're human before entering the dashboard" />
+            </label>
+
+            <label class="field field--wide">
+              <span>Body copy</span>
+              <textarea id="body" rows="3">This demo uses a local mock widget and local verification endpoint so you can test the full UX flow on a real page.</textarea>
+            </label>
+
+            <label class="field field--wide">
+              <span>Helper text</span>
+              <input id="helper" type="text" value="Try success, failure, timeout, tamper detection, and cookie persistence." />
+            </label>
+
+            <label class="field field--wide">
+              <span>Custom CSS</span>
+              <textarea id="custom-css" rows="6">.captcha-shield__panel {
+  max-width: 32rem;
+}
+
+.captcha-shield__body {
+  max-width: 34ch;
+}</textarea>
+            </label>
+
+            <label class="field">
+              <span>Verify endpoint</span>
+              <select id="verify-mode">
+                <option value="ok">Success (204)</option>
+                <option value="fail">Reject (403)</option>
+                <option value="slow">Slow success (1.2s)</option>
+                <option value="off">Disabled</option>
+              </select>
+            </label>
+
+            <label class="field">
+              <span>Status precheck</span>
+              <select id="status-mode">
+                <option value="off">Disabled</option>
+                <option value="ok">Healthy (204)</option>
+                <option value="fail">Fail (503)</option>
+              </select>
+            </label>
+
+            <label class="field">
+              <span>Cookie mode</span>
+              <select id="cookie-mode">
+                <option value="session">Session only</option>
+                <option value="trusted">Trusted client cookie</option>
+              </select>
+            </label>
+
+            <label class="field">
+              <span>Cookie SameSite</span>
+              <select id="same-site">
+                <option value="Lax">Lax</option>
+                <option value="Strict">Strict</option>
+                <option value="None">None</option>
+              </select>
+            </label>
+          </div>
+
+          <div class="toggle-grid">
+            <label class="toggle">
+              <input id="close-on-verify" type="checkbox" checked />
+              <span>Close on verify</span>
+            </label>
+            <label class="toggle">
+              <input id="inject-style" type="checkbox" checked />
+              <span>Inject default style</span>
+            </label>
+            <label class="toggle">
+              <input id="monitor-removal" type="checkbox" />
+              <span>Watch challenge removal</span>
+            </label>
+            <label class="toggle">
+              <input id="enforce-presence" type="checkbox" checked />
+              <span>Enforce challenge presence</span>
+            </label>
+          </div>
+
+          <div class="toolbar toolbar--secondary">
+            <button id="recreate-instance" class="button" type="button">Recreate instance</button>
+            <button id="reset-instance" class="button" type="button">Reset instance</button>
+            <button id="destroy-instance" class="button" type="button">Destroy instance</button>
+            <button id="clear-cookie" class="button" type="button">Clear cookie</button>
+            <button id="simulate-tamper" class="button button--danger" type="button">Simulate tamper</button>
+          </div>
+        </section>
+
+        <aside class="sidebar">
+          <section class="panel">
+            <div class="panel__header">
+              <h2>Runtime</h2>
+            </div>
+            <dl class="status-list">
+              <div>
+                <dt>Verified</dt>
+                <dd id="state-verified">false</dd>
+              </div>
+              <div>
+                <dt>Token</dt>
+                <dd id="state-token">none</dd>
+              </div>
+              <div>
+                <dt>Cookie</dt>
+                <dd id="state-cookie">empty</dd>
+              </div>
+              <div>
+                <dt>Last result</dt>
+                <dd id="state-result">none</dd>
+              </div>
+            </dl>
+          </section>
+
+          <section class="panel">
+            <div class="panel__header">
+              <h2>Current config</h2>
+            </div>
+            <pre id="config-preview" class="code-block"></pre>
+          </section>
+
+          <section class="panel">
+            <div class="panel__header">
+              <h2>Event log</h2>
+            </div>
+            <div id="event-log" class="log"></div>
+          </section>
+
+          <section class="panel">
+            <div class="panel__header">
+              <h2>Roadmap</h2>
+            </div>
+            <ol class="roadmap">
+              <li>Server-signed skip tokens for safer long-lived persistence.</li>
+              <li>First-party renderer presets for inline, sheet, and compact layouts.</li>
+              <li>Analytics hooks for render, success, reject, timeout, and tamper.</li>
+              <li>Framework adapters for Next.js, Express, edge workers, and Laravel.</li>
+            </ol>
+          </section>
+        </aside>
+      </main>
+    </div>
+
+    <script type="module" src="./app.js"></script>
+  </body>
+</html>

@@ -1,5 +1,6 @@
 import { ResolvedIntegrityOptions, TurnstileGlobal } from './types';
 import { CaptchaShieldError } from './errors';
+import { validateTurnstileScriptUrl } from './validation';
 
 let turnstileLoader: Promise<TurnstileGlobal> | null = null;
 
@@ -11,7 +12,10 @@ export function ensureTurnstile(scriptUrl: string, integrity: ResolvedIntegrityO
   }
 
   if (!turnstileLoader) {
-    turnstileLoader = loadTurnstileScript(scriptUrl, integrity);
+    turnstileLoader = loadTurnstileScript(scriptUrl, integrity).catch((err) => {
+      turnstileLoader = null;
+      throw err;
+    });
   }
 
   return turnstileLoader;
@@ -20,7 +24,7 @@ export function ensureTurnstile(scriptUrl: string, integrity: ResolvedIntegrityO
 function loadTurnstileScript(scriptUrl: string, integrity: ResolvedIntegrityOptions): Promise<TurnstileGlobal> {
   return new Promise((resolve, reject) => {
     const script = document.createElement('script');
-    script.src = scriptUrl;
+    script.src = validateTurnstileScriptUrl(scriptUrl);
     script.async = true;
     if (integrity.scriptIntegrity) {
       script.integrity = integrity.scriptIntegrity;

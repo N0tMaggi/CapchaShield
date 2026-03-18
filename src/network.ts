@@ -1,4 +1,5 @@
 import { CaptchaShieldError } from './errors';
+import { validateRequestEndpoint } from './validation';
 
 /**
  * Executes a fetch request with a timeout.
@@ -33,12 +34,8 @@ export function isExpectedStatus(status: number, expected: number | ((status: nu
  * FIX: Included handling for relative URLs.
  */
 export function appendTokenQuery(endpoint: string, token: string): string {
-  const trimmed = endpoint.trim();
-  if (!trimmed) {
-    throw new CaptchaShieldError('Cannot append token: "endpoint" is empty.');
-  }
+  const trimmed = validateRequestEndpoint(endpoint, 'verify.endpoint');
 
-  // Check if valid absolute URL
   try {
     const isAbsolute = /^[a-zA-Z][a-zA-Z\d+\-.]*:/.test(trimmed);
     if (isAbsolute) {

@@ -22,10 +22,12 @@ describe('Security Checks', () => {
       expect(result).toContain('token=abc');
     });
 
-    it('should handle weird protocol inputs by treating them as paths if invalid', () => {
-       // Note: fetch() will likely reject this later, but we ensure we don't crash
-      const result = appendTokenQuery('javascript:alert(1)', 'abc');
-      expect(result).toBe('javascript:alert(1)?token=abc');
+    it('should reject unsafe protocols', () => {
+      expect(() => appendTokenQuery('javascript:alert(1)', 'abc')).toThrow('verify.endpoint');
+    });
+
+    it('should reject protocol-relative URLs', () => {
+      expect(() => appendTokenQuery('//example.com/api', 'abc')).toThrow('verify.endpoint');
     });
   });
 

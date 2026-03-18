@@ -4,3 +4,6 @@ dist
 *.log
 coverage
 *.tsbuildinfo
+.playwright-cli
+output
+.idea/

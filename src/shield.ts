@@ -3,6 +3,7 @@ import { renderDefaultModal } from './renderer';
 import { ensureTurnstile, requireDom } from './turnstile';
 import { runStatusCheck, verifyTokenWithServer } from './verification';
 import { CaptchaShieldError } from './errors';
+import { validateRequestEndpoint, validateTurnstileScriptUrl } from './validation';
 import {
   CookieOptions,
   IntegrityWatch,
@@ -55,6 +56,7 @@ const DEFAULT_COOKIE: ResolvedCookieOptions = {
   secure: true,
   scopeId: undefined,
   useScopePrefix: false,
+  trustClientCookie: false,
 };
 
 const DEFAULT_VERIFY: ResolvedVerifyOptions = {
@@ -94,7 +96,8 @@ export function createCaptchaShield(config: ShieldConfig): ShieldController {
   let integrityWatch: IntegrityWatch | null = null;
   let currentOpenId = 0; // Tracks the validity of the current open request
 
-  const isAlreadyVerified = () => verified || hasCookie(resolved.cookie.name);
+  const isAlreadyVerified = () =>
+    verified || (resolved.cookie.trustClientCookie && hasCookie(resolved.cookie.name));
 
   const close = () => {
     // Invalidate any pending open operations
@@ -158,7 +161,7 @@ export function createCaptchaShield(config: ShieldConfig): ShieldController {
   };
 
   const open = async (): Promise<ShieldOpenResult> => {
-    const cookieVerified = hasCookie(resolved.cookie.name);
+    const cookieVerified = resolved.cookie.trustClientCookie && hasCookie(resolved.cookie.name);
     if (verified || cookieVerified) {
       verified = true;
       return { status: 'already-verified', reason: cookieVerified ? 'cookie' : 'session' };
@@ -210,7 +213,9 @@ export function createCaptchaShield(config: ShieldConfig): ShieldController {
     token = turnstileToken;
     const finalize = () => {
       verified = true;
-      setCookie(resolved.cookie, '1');
+      if (resolved.cookie.trustClientCookie) {
+        setCookie(resolved.cookie, '1');
+      }
       resolved.onVerified?.(turnstileToken);
       if (resolved.modal.closeOnVerify) {
         close();
@@ -236,14 +241,14 @@ export function createCaptchaShield(config: ShieldConfig): ShieldController {
         return;
       }
 
-      finalize();
+        finalize();
     };
 
     if (!verifying) {
       verifying = executeVerification()
         .catch((err) => {
           resetWidget();
-          handleError(err instanceof Error ? err.message : String(err));
+          handleError(normalizeErrorMessage(err));
         })
         .finally(() => {
           verifying = null;
@@ -287,11 +292,23 @@ function resolveConfig(config: ShieldConfig): ResolvedShieldConfig {
   const statusCheck = { ...DEFAULT_STATUS, ...(config.statusCheck ?? {}) };
   const integrity = { ...DEFAULT_INTEGRITY, ...(config.integrity ?? {}) };
 
+  if (config.verify?.method && config.verify.method !== 'POST') {
+    throw new CaptchaShieldError('verify.method only supports "POST".');
+  }
+
+  const turnstileScriptUrl = validateTurnstileScriptUrl(config.turnstileScriptUrl ?? DEFAULT_SCRIPT_URL);
+  if (verify.endpoint) {
+    verify.endpoint = validateRequestEndpoint(verify.endpoint, 'verify.endpoint');
+  }
+  if (statusCheck.endpoint) {
+    statusCheck.endpoint = validateRequestEndpoint(statusCheck.endpoint, 'statusCheck.endpoint');
+  }
+
   return {
     siteKey: config.siteKey,
     action: config.action,
     cData: config.cData,
-    turnstileScriptUrl: config.turnstileScriptUrl ?? DEFAULT_SCRIPT_URL,
+    turnstileScriptUrl,
     modal,
     cookie,
     verify,
@@ -322,4 +339,12 @@ function startIntegrityWatch(element: HTMLElement, onTamper: () => void): Integr
     observer,
     stop: () => observer.disconnect(),
   };
+}
+
+function normalizeErrorMessage(error: unknown): string {
+  if (error instanceof Error) {
+    return error.message.replace(/^\[CaptchaShield\]\s*/, '');
+  }
+
+  return String(error);
 }

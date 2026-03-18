@@ -28,6 +28,13 @@ export interface CookieOptions {
   secure?: boolean;
   scopeId?: string;
   useScopePrefix?: boolean;
+  /**
+   * When enabled, a client-set cookie is allowed to skip the challenge on later visits.
+   *
+   * Keep this disabled unless challenge bypass is purely UX and your backend enforces its
+   * own verification on every protected action.
+   */
+  trustClientCookie?: boolean;
 }
 
 export interface ModalCopyOptions {
@@ -62,7 +69,7 @@ export interface ModalOptions {
 
 export interface VerifyOptions {
   endpoint?: string;
-  method?: 'POST' | 'GET';
+  method?: 'POST';
   headers?: Record<string, string>;
   timeoutMs?: number;
   retries?: number;
@@ -134,11 +141,12 @@ export interface ResolvedCookieOptions {
   secure: boolean;
   scopeId?: string;
   useScopePrefix: boolean;
+  trustClientCookie: boolean;
 }
 
 export interface ResolvedVerifyOptions {
   endpoint?: string;
-  method: 'POST' | 'GET';
+  method: 'POST';
   headers: Record<string, string>;
   timeoutMs: number;
   retries: number;
