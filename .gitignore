@@ -7,3 +7,6 @@ coverage
 .playwright-cli
 output
 .idea/
+.vscode/
+*.env
+*.local.json

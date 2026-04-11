@@ -7,6 +7,7 @@
 [![npm version](https://img.shields.io/npm/v/captchashield?color=6b4f3a&label=npm)](https://www.npmjs.com/package/captchashield)
 [![npm downloads](https://img.shields.io/npm/dw/captchashield?color=8b6a4d)](https://www.npmjs.com/package/captchashield)
 [![bundle size](https://img.shields.io/bundlephobia/minzip/captchashield?label=min%2Bgzip&color=5b4636)](https://bundlephobia.com/package/captchashield)
+[![CI](https://github.com/N0tMaggi/CapchaShield/actions/workflows/ci.yml/badge.svg)](https://github.com/N0tMaggi/CapchaShield/actions/workflows/ci.yml)
 [![types](https://img.shields.io/badge/TypeScript-ready-6b4f3a)](#api-at-a-glance)
 [![license](https://img.shields.io/badge/License-MIT-7f674f)](LICENSE)
 
@@ -28,7 +29,6 @@ CaptchaShield exists for teams that want a straightforward Turnstile integration
 - `vitest` with `jsdom` for unit and behavior tests
 - `eslint` for static linting
 - a small Node HTTP server for the local demo lab
-- Playwright CLI for browser-level demo verification and screenshot capture
 
 ## Demo
 
@@ -191,6 +191,7 @@ CaptchaShield improves Turnstile UX. It is not a substitute for backend enforcem
 - Only enable `cookie.trustClientCookie` when client-side skip is acceptable for your use case.
 - Verification only supports `POST`, so tokens do not end up in URLs.
 - Endpoint configuration is validated and custom script loading is restricted to the official Cloudflare host.
+- `cookie.name`, `cookie.domain`, and `cookie.path` are validated against RFC 6265 at construction time — passing values with semicolons or control characters throws immediately.
 - Custom CSS is injected as-is; never pass user-generated CSS into `modal.styles.customCss`.
 
 ## Common Config
