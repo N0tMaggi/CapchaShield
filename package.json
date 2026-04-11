@@ -48,7 +48,7 @@
     "@typescript-eslint/parser": "^8.53.1",
     "eslint": "^9.39.2",
     "globals": "^15.14.0",
-    "jsdom": "^27.4.0",
+    "jsdom": "^26.1.0",
     "tsup": "^8.5.1",
     "typescript": "^5.9.3",
     "vitest": "^4.0.17"
