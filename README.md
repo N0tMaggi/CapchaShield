@@ -4,8 +4,8 @@
   <p>Cloudflare Turnstile modal for browser applications with secure defaults, optional backend verification, and a dedicated local demo lab.</p>
 </div>
 
-[![npm version](https://img.shields.io/npm/v/captchashield?color=6b4f3a&label=npm)](https://www.npmjs.com/package/captchashield)
-[![npm downloads](https://img.shields.io/npm/dw/captchashield?color=8b6a4d)](https://www.npmjs.com/package/captchashield)
+[![npm version](https://img.shields.io/npm/v/captchashield?color=6b4f3a&label=npm)](https://www.npmjs.com/package/@maggidev/captchashield)
+[![npm downloads](https://img.shields.io/npm/dw/captchashield?color=8b6a4d)](https://www.npmjs.com/package/@maggidev/captchashield)
 [![bundle size](https://img.shields.io/bundlephobia/minzip/captchashield?label=min%2Bgzip&color=5b4636)](https://bundlephobia.com/package/captchashield)
 [![CI](https://github.com/N0tMaggi/CapchaShield/actions/workflows/ci.yml/badge.svg)](https://github.com/N0tMaggi/CapchaShield/actions/workflows/ci.yml)
 [![types](https://img.shields.io/badge/TypeScript-ready-6b4f3a)](#api-at-a-glance)
