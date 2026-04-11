@@ -1,4 +1,26 @@
+import { CaptchaShieldError } from './errors';
 import { ResolvedCookieOptions } from './types';
+
+// RFC 6265 §4.1.1: cookie-name must be a US-ASCII "token" —
+// printable characters excluding control chars and the listed separators.
+const COOKIE_NAME_RE = /^[!#$%&'*+\-.0-9A-Z^_`a-z|~]+$/;
+
+function assertValidCookieName(name: string): void {
+  if (!name || !COOKIE_NAME_RE.test(name)) {
+    throw new CaptchaShieldError(
+      `Invalid cookie.name "${name}": must be a valid RFC 6265 token (printable ASCII, no separators or control characters).`
+    );
+  }
+}
+
+// RFC 6265 §4.1.1: cookie attribute values must not contain semicolons.
+function assertValidCookieAttributeValue(value: string, attr: string): void {
+  if (value.includes(';')) {
+    throw new CaptchaShieldError(
+      `Invalid cookie.${attr} "${value}": must not contain semicolons.`
+    );
+  }
+}
 
 export function hasCookie(name: string): boolean {
   if (typeof document === 'undefined') return false;
@@ -6,6 +28,10 @@ export function hasCookie(name: string): boolean {
 }
 
 export function setCookie(options: ResolvedCookieOptions, value: string) {
+  assertValidCookieName(options.name);
+  if (options.domain) assertValidCookieAttributeValue(options.domain, 'domain');
+  assertValidCookieAttributeValue(options.path, 'path');
+
   const attributes = [
     `path=${options.path}`,
     `max-age=${options.maxAgeSeconds}`,
@@ -20,6 +46,10 @@ export function setCookie(options: ResolvedCookieOptions, value: string) {
 }
 
 export function clearCookie(options: ResolvedCookieOptions) {
+  assertValidCookieName(options.name);
+  if (options.domain) assertValidCookieAttributeValue(options.domain, 'domain');
+  assertValidCookieAttributeValue(options.path, 'path');
+
   const attributes = [
     `expires=Thu, 01 Jan 1970 00:00:00 GMT`,
     `path=${options.path}`,

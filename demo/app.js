@@ -139,6 +139,10 @@ function buildConfig(rendererMode) {
         helperText: fields.helper.value,
       },
       styles: {
+        // DEMO ONLY: passing a textarea value to customCss is intentional here so developers
+        // can interactively test styling. In production, customCss MUST be a static
+        // developer-controlled string — never user-supplied input. CSS can exfiltrate data
+        // via attribute selectors combined with background-image requests.
         customCss: fields.customCss.value,
       },
     },

@@ -2,7 +2,8 @@ import { ResolvedIntegrityOptions, TurnstileGlobal } from './types';
 import { CaptchaShieldError } from './errors';
 import { validateTurnstileScriptUrl } from './validation';
 
-let turnstileLoader: Promise<TurnstileGlobal> | null = null;
+// Keyed by script URL so instances with different URLs each get their own load.
+const turnstileLoaders = new Map<string, Promise<TurnstileGlobal>>();
 
 export function ensureTurnstile(scriptUrl: string, integrity: ResolvedIntegrityOptions): Promise<TurnstileGlobal> {
   requireDom();
@@ -11,14 +12,16 @@ export function ensureTurnstile(scriptUrl: string, integrity: ResolvedIntegrityO
     return Promise.resolve(window.turnstile);
   }
 
-  if (!turnstileLoader) {
-    turnstileLoader = loadTurnstileScript(scriptUrl, integrity).catch((err) => {
-      turnstileLoader = null;
-      throw err;
-    });
-  }
+  const existing = turnstileLoaders.get(scriptUrl);
+  if (existing) return existing;
 
-  return turnstileLoader;
+  const loader = loadTurnstileScript(scriptUrl, integrity).catch((err) => {
+    turnstileLoaders.delete(scriptUrl);
+    throw err;
+  });
+
+  turnstileLoaders.set(scriptUrl, loader);
+  return loader;
 }
 
 function loadTurnstileScript(scriptUrl: string, integrity: ResolvedIntegrityOptions): Promise<TurnstileGlobal> {

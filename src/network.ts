@@ -1,5 +1,4 @@
 import { CaptchaShieldError } from './errors';
-import { validateRequestEndpoint } from './validation';
 
 /**
  * Executes a fetch request with a timeout.
@@ -26,33 +25,6 @@ export function isExpectedStatus(status: number, expected: number | ((status: nu
     return expected(status);
   }
   return status === expected;
-}
-
-/**
- * Appends the turnstile token to the endpoint URL.
- * 
- * FIX: Included handling for relative URLs.
- */
-export function appendTokenQuery(endpoint: string, token: string): string {
-  const trimmed = validateRequestEndpoint(endpoint, 'verify.endpoint');
-
-  try {
-    const isAbsolute = /^[a-zA-Z][a-zA-Z\d+\-.]*:/.test(trimmed);
-    if (isAbsolute) {
-      const url = new URL(trimmed);
-      url.searchParams.append('token', token);
-      return url.toString();
-    }
-  } catch {
-    // Ignore URL parse errors to fall through to relative handling if it looked absolute but wasn't
-  }
-
-  // Handle relative URLs (preserves ./, /, or plain paths)
-  const [pathPart, queryPart] = trimmed.split('?', 2);
-  const params = new URLSearchParams(queryPart);
-  params.append('token', token);
-
-  return `${pathPart}?${params.toString()}`;
 }
 
 /**

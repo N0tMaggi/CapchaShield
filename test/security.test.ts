@@ -1,35 +1,7 @@
-import { describe, it, expect, vi, afterEach } from 'vitest';
-import { appendTokenQuery } from '../src/network';
+import { describe, it, expect, vi } from 'vitest';
 import { renderDefaultModal } from '../src/renderer';
-import { ResolvedShieldConfig } from '../src/types';
 
 describe('Security Checks', () => {
-
-  describe('URL Handling (appendTokenQuery)', () => {
-    it('should correctly append token to relative URLs', () => {
-      const result = appendTokenQuery('/api/verify', 'abc');
-      expect(result).toBe('/api/verify?token=abc');
-    });
-
-    it('should correctly append token to absolute URLs', () => {
-      const result = appendTokenQuery('https://example.com/api', 'abc');
-      expect(result).toBe('https://example.com/api?token=abc');
-    });
-
-    it('should preserve existing query parameters', () => {
-      const result = appendTokenQuery('/api/verify?v=1', 'abc');
-      expect(result).toContain('v=1');
-      expect(result).toContain('token=abc');
-    });
-
-    it('should reject unsafe protocols', () => {
-      expect(() => appendTokenQuery('javascript:alert(1)', 'abc')).toThrow('verify.endpoint');
-    });
-
-    it('should reject protocol-relative URLs', () => {
-      expect(() => appendTokenQuery('//example.com/api', 'abc')).toThrow('verify.endpoint');
-    });
-  });
 
   describe('XSS Prevention in Default Modal', () => {
     /* Setup basic DOM environment for renderer */

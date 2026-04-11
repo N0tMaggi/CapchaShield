@@ -50,30 +50,29 @@ export function renderDefaultModal({ challengeContainer, config, close }: Render
   panel.appendChild(helper);
   overlay.appendChild(panel);
 
+  let injectedStyle: HTMLStyleElement | null = null;
   if (config.modal.injectDefaultStyle) {
-    injectStyle(defaultStyleSheet(config.modal.styles.customCss));
+    injectedStyle = injectStyle(defaultStyleSheet(config.modal.styles.customCss));
   } else if (config.modal.styles.customCss.trim().length > 0) {
-    injectStyle(config.modal.styles.customCss);
+    injectedStyle = injectStyle(config.modal.styles.customCss);
   }
 
   return {
     root: overlay,
-    destroy: () => overlay.remove(),
+    destroy: () => {
+      overlay.remove();
+      injectedStyle?.remove();
+    },
   };
 }
 
-function injectStyle(css: string) {
-  if (!css.trim()) return;
-  const attrValue = 'true';
-  const existing = document.head.querySelector('style[data-captcha-shield-style="true"]');
-  if (existing) {
-    existing.textContent = css;
-    return;
-  }
+function injectStyle(css: string): HTMLStyleElement | null {
+  if (!css.trim()) return null;
   const style = document.createElement('style');
-  style.setAttribute('data-captcha-shield-style', attrValue);
+  style.setAttribute('data-captcha-shield-style', 'true');
   style.textContent = css;
   document.head.appendChild(style);
+  return style;
 }
 
 function defaultStyleSheet(customCss: string): string {
