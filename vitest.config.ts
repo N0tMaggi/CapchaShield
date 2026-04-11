@@ -4,5 +4,10 @@ export default defineConfig({
   test: {
     environment: 'jsdom',
     globals: true,
+    environmentOptions: {
+      jsdom: {
+        url: 'https://localhost/',
+      },
+    },
   },
 });
