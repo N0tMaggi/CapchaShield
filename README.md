@@ -4,9 +4,9 @@
   <p>Cloudflare Turnstile modal for browser applications with secure defaults, optional backend verification, and a dedicated local demo lab.</p>
 </div>
 
-[![npm version](https://img.shields.io/npm/v/captchashield?color=6b4f3a&label=npm)](https://www.npmjs.com/package/@maggidev/captchashield)
-[![npm downloads](https://img.shields.io/npm/dw/captchashield?color=8b6a4d)](https://www.npmjs.com/package/@maggidev/captchashield)
-[![bundle size](https://img.shields.io/bundlephobia/minzip/captchashield?label=min%2Bgzip&color=5b4636)](https://bundlephobia.com/package/captchashield)
+[![npm version](https://img.shields.io/npm/v/@maggidev%2Fcaptchashield?color=6b4f3a&label=npm)](https://www.npmjs.com/package/@maggidev/captchashield)
+[![npm downloads](https://img.shields.io/npm/dw/@maggidev%2Fcaptchashield?color=8b6a4d)](https://www.npmjs.com/package/@maggidev/captchashield)
+[![bundle size](https://img.shields.io/bundlephobia/minzip/@maggidev%2Fcaptchashield?label=min%2Bgzip&color=5b4636)](https://bundlephobia.com/package/@maggidev/captchashield)
 [![CI](https://github.com/N0tMaggi/CapchaShield/actions/workflows/ci.yml/badge.svg)](https://github.com/N0tMaggi/CapchaShield/actions/workflows/ci.yml)
 [![types](https://img.shields.io/badge/TypeScript-ready-6b4f3a)](#api-at-a-glance)
 [![license](https://img.shields.io/badge/License-MIT-7f674f)](LICENSE)
@@ -57,6 +57,8 @@ npm run demo
 Then open:
 
 [http://127.0.0.1:4173/demo/](http://127.0.0.1:4173/demo/)
+
+> **No Cloudflare account needed for local testing.** The demo ships with a built-in mock Turnstile widget that fires the token callback immediately. You can also use Cloudflare's [public test site keys](https://developers.cloudflare.com/turnstile/troubleshooting/testing/) (`1x00000000000000000000AA` always passes, `2x00000000000000000000AB` always blocks) against the real Turnstile script.
 
 The demo page includes:
 
@@ -156,13 +158,13 @@ stateDiagram-v2
 ## Install
 
 ```bash
-npm install captchashield
+npm install @maggidev/captchashield
 ```
 
 ## Quick Start
 
 ```ts
-import { createCaptchaShield } from 'captchashield';
+import { createCaptchaShield } from '@maggidev/captchashield';
 
 const shield = createCaptchaShield({
   siteKey: '<your-turnstile-sitekey>',
@@ -179,6 +181,8 @@ const shield = createCaptchaShield({
 
 await shield.open();
 ```
+
+The `verify.endpoint` receives a `POST` request with `Content-Type: application/json` and body `{ "token": "<turnstile-token>" }`. Any `2xx` response is treated as success; anything else triggers `onError`.
 
 By default, verified state is session-local. Persistent skip via cookie only happens when `cookie.trustClientCookie` is enabled.
 

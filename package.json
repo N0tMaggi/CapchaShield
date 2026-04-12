@@ -1,6 +1,6 @@
 {
   "name": "@maggidev/captchashield",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Customizable Cloudflare Turnstile modal with secure defaults and optional client-cookie skip logic.",
   "license": "MIT",
   "type": "module",
@@ -13,6 +13,7 @@
   ],
   "exports": {
     ".": {
+      "types": "./dist/index.d.ts",
       "import": "./dist/index.mjs",
       "require": "./dist/index.cjs"
     },
