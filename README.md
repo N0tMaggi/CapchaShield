@@ -1,5 +1,5 @@
 <div align="center">
-  <img src="docs/assets/shield-mark.svg" alt="CaptchaShield mark" width="72" />
+  <img src="https://raw.githubusercontent.com/N0tMaggi/CapchaShield/main/docs/assets/shield-mark.svg" alt="CaptchaShield mark" width="72" />
   <h1>CaptchaShield</h1>
   <p>Cloudflare Turnstile modal for browser apps — script loading, token verification, session state, and cleanup included.</p>
 </div>
@@ -264,16 +264,16 @@ flowchart LR
 > The visuals below are from the local demo page in [`demo/`](demo). They show one testing surface only and do not represent every possible integration style or a recommended production design.
 
 <p align="center">
-  <img src="docs/assets/demo-flow.gif" alt="Demo flow" width="860" />
+  <img src="https://raw.githubusercontent.com/N0tMaggi/CapchaShield/main/docs/assets/demo-flow.gif" alt="Demo flow" width="860" />
 </p>
 
 <p align="center">
-  <img src="docs/assets/demo-overview.png" alt="Demo overview" width="860" />
+  <img src="https://raw.githubusercontent.com/N0tMaggi/CapchaShield/main/docs/assets/demo-overview.png" alt="Demo overview" width="860" />
 </p>
 
 <p align="center">
-  <img src="docs/assets/demo-modal.png" alt="Default modal screenshot" width="460" />
-  <img src="docs/assets/demo-custom.png" alt="Custom renderer screenshot" width="860" />
+  <img src="https://raw.githubusercontent.com/N0tMaggi/CapchaShield/main/docs/assets/demo-modal.png" alt="Default modal screenshot" width="460" />
+  <img src="https://raw.githubusercontent.com/N0tMaggi/CapchaShield/main/docs/assets/demo-custom.png" alt="Custom renderer screenshot" width="860" />
 </p>
 
 The demo page includes:
