@@ -1,7 +1,7 @@
 <div align="center">
   <img src="docs/assets/shield-mark.svg" alt="CaptchaShield mark" width="72" />
   <h1>CaptchaShield</h1>
-  <p>Cloudflare Turnstile modal for browser applications with secure defaults, optional backend verification, and a dedicated local demo lab.</p>
+  <p>Cloudflare Turnstile modal for browser apps — script loading, token verification, session state, and cleanup included.</p>
 </div>
 
 [![npm version](https://img.shields.io/npm/v/@maggidev%2Fcaptchashield?color=6b4f3a&label=npm)](https://www.npmjs.com/package/@maggidev/captchashield)
@@ -11,149 +11,7 @@
 [![types](https://img.shields.io/badge/TypeScript-ready-6b4f3a)](#api-at-a-glance)
 [![license](https://img.shields.io/badge/License-MIT-7f674f)](LICENSE)
 
-## Why
-
-CaptchaShield exists for teams that want a straightforward Turnstile integration without rebuilding the same modal, cleanup, retry, and verification flow for every project.
-
-- It keeps the browser-side integration small and focused.
-- It supports both the built-in modal and custom renderers.
-- It treats client persistence as explicit opt-in instead of a hidden default.
-- It makes local testing easier with a dedicated demo page and mock widget.
-- It is designed to stay honest about what is UX and what must still be enforced on the backend.
-
-## Technologies
-
-- TypeScript for the package surface and internal logic
-- Cloudflare Turnstile as the challenge provider
-- `tsup` for package bundling
-- `vitest` with `jsdom` for unit and behavior tests
-- `eslint` for static linting
-- a small Node HTTP server for the local demo lab
-
-## Demo
-
-> The visuals below are from the local demo page in [`demo/`](demo). They show one testing surface only.
-> They do not represent every possible integration style, every renderer, or a recommended production design for all consumers of the package.
-
-<p align="center">
-  <img src="docs/assets/demo-flow.gif" alt="Demo flow" width="860" />
-</p>
-
-<p align="center">
-  <img src="docs/assets/demo-overview.png" alt="Demo overview" width="860" />
-</p>
-
-<p align="center">
-  <img src="docs/assets/demo-modal.png" alt="Default modal screenshot" width="460" />
-  <img src="docs/assets/demo-custom.png" alt="Custom renderer screenshot" width="860" />
-</p>
-
-Run the local demo:
-
-```bash
-npm run demo
-```
-
-Then open:
-
-[http://127.0.0.1:4173/demo/](http://127.0.0.1:4173/demo/)
-
-> **No Cloudflare account needed for local testing.** The demo ships with a built-in mock Turnstile widget that fires the token callback immediately. You can also use Cloudflare's [public test site keys](https://developers.cloudflare.com/turnstile/troubleshooting/testing/) (`1x00000000000000000000AA` always passes, `2x00000000000000000000AB` always blocks) against the real Turnstile script.
-
-The demo page includes:
-
-- default modal and custom renderer flows
-- local mock Turnstile behavior
-- local verify and status endpoints
-- session-only versus trusted-cookie behavior
-- tamper simulation
-- live config preview and event log
-
-## How It Works
-
-### Verification Flow
-
-```mermaid
-sequenceDiagram
-    participant User
-    participant App
-    participant CaptchaShield
-    participant Turnstile
-    participant Backend
-
-    User->>App: Request protected action
-    App->>CaptchaShield: open()
-    alt already verified in session or trusted cookie
-        CaptchaShield-->>App: already-verified
-    else needs challenge
-        CaptchaShield->>Turnstile: load script and render widget
-        Turnstile-->>CaptchaShield: token
-        CaptchaShield->>Backend: POST verify(token)
-        alt accepted
-            Backend-->>CaptchaShield: 2xx
-            CaptchaShield-->>App: rendered / verified
-        else rejected
-            Backend-->>CaptchaShield: non-2xx
-            CaptchaShield->>Turnstile: reset widget
-            CaptchaShield-->>App: onError(...)
-        end
-    end
-```
-
-### Package Responsibilities
-
-```mermaid
-flowchart LR
-    A["App code"] --> B["createCaptchaShield(config)"]
-    B --> C["Script loading and validation"]
-    B --> D["Modal or custom renderer"]
-    B --> E["Verification request handling"]
-    B --> F["Session and optional trusted cookie state"]
-    B --> G["Lifecycle cleanup and reset"]
-```
-
-### Demo Lab Surface
-
-```mermaid
-flowchart TB
-    UI["demo/index.html"] --> APP["demo/app.js"]
-    APP --> LIB["dist/index.mjs"]
-    APP --> MOCK["Mock Turnstile widget"]
-    APP --> STATUS["/api/status"]
-    APP --> VERIFY["/api/verify"]
-    STATUS --> SERVER["scripts/serve-demo.mjs"]
-    VERIFY --> SERVER
-```
-
-### Verified State
-
-```mermaid
-stateDiagram-v2
-    [*] --> Unverified
-    Unverified --> SessionVerified: verify success
-    SessionVerified --> Unverified: reset() or destroy()
-    SessionVerified --> TrustedCookieVerified: trustClientCookie enabled
-    TrustedCookieVerified --> Unverified: cookie cleared or expired
-```
-
-## What The Package Handles
-
-- Turnstile script loading from the official Cloudflare host
-- built-in modal rendering with sane defaults
-- custom render hook support
-- token verification requests with timeout and retry handling
-- widget reset and cleanup after reject or error
-- optional status precheck before rendering
-- challenge presence and removal monitoring
-- typed error callbacks
-
-## What Your Backend Still Must Handle
-
-- final authorization decisions
-- Turnstile secret management
-- token verification against Cloudflare `siteverify`
-- route protection and abuse policy
-- rate limiting, IP policy, and application-specific trust decisions
+---
 
 ## Install
 
@@ -172,7 +30,7 @@ const shield = createCaptchaShield({
     endpoint: '/api/turnstile/verify',
   },
   onVerified: (token) => {
-    console.log('Verified token', token);
+    // proceed with the protected action
   },
   onError: (error) => {
     console.error(error.message);
@@ -182,21 +40,47 @@ const shield = createCaptchaShield({
 await shield.open();
 ```
 
-The `verify.endpoint` receives a `POST` request with `Content-Type: application/json` and body `{ "token": "<turnstile-token>" }`. Any `2xx` response is treated as success; anything else triggers `onError`.
+**What your endpoint receives:** `POST` with `Content-Type: application/json` and body `{ "token": "..." }`. Any `2xx` response is treated as success; anything else triggers `onError`.
 
-By default, verified state is session-local. Persistent skip via cookie only happens when `cookie.trustClientCookie` is enabled.
+Verified state is session-local by default. Persistent skip via cookie only activates when `cookie.trustClientCookie` is enabled.
+
+---
+
+## Local Testing
+
+**No Cloudflare account required.**
+
+**Option A — built-in demo with mock widget:**
+
+```bash
+npm run demo
+```
+
+Opens at [http://127.0.0.1:4173/demo/](http://127.0.0.1:4173/demo/). The demo ships a mock Turnstile that fires the token callback immediately — no sitekey needed.
+
+**Option B — Cloudflare public test keys** (real Turnstile script, no account):
+
+| Sitekey | Behavior |
+|---|---|
+| `1x00000000000000000000AA` | Always passes |
+| `2x00000000000000000000AB` | Always blocks |
+| `3x00000000000000000000FF` | Always shows interactive challenge |
+
+---
 
 ## Security Model
 
 CaptchaShield improves Turnstile UX. It is not a substitute for backend enforcement.
 
 - Always verify Turnstile tokens on your server for protected actions.
-- Treat client cookies as UX only. Do not use them as authorization.
+- Treat client cookies as UX convenience only. Do not use them as authorization.
 - Only enable `cookie.trustClientCookie` when client-side skip is acceptable for your use case.
-- Verification only supports `POST`, so tokens do not end up in URLs.
-- Endpoint configuration is validated and custom script loading is restricted to the official Cloudflare host.
+- Verification only supports `POST` — tokens never end up in URLs.
+- Endpoint configuration is validated; custom script loading is restricted to the official Cloudflare host.
 - `cookie.name`, `cookie.domain`, and `cookie.path` are validated against RFC 6265 at construction time — passing values with semicolons or control characters throws immediately.
-- Custom CSS is injected as-is; never pass user-generated CSS into `modal.styles.customCss`.
+- Custom CSS is injected as-is. Never pass user-generated content into `modal.styles.customCss`.
+
+---
 
 ## Common Config
 
@@ -244,6 +128,8 @@ createCaptchaShield({
 });
 ```
 
+---
+
 ## Minimal Backend Example
 
 ```ts
@@ -268,35 +154,174 @@ export async function verifyTurnstile(req: Request, res: Response) {
 }
 ```
 
+---
+
 ## API At A Glance
 
 `createCaptchaShield(config)` returns:
 
-- `open(): Promise<{ status: 'rendered' | 'already-verified'; reason?: 'cookie' | 'session' }>`
-- `close()`: remove the modal without clearing state
-- `reset()`: clear token, trusted cookie, and reset the widget
-- `destroy()`: reset and close
-- `isVerified()`: inspect current verified state
-- `getToken()`: read the last token seen by the instance
+| Method | Description |
+|---|---|
+| `open()` | Show the modal. Returns `{ status: 'rendered' \| 'already-verified'; reason?: 'cookie' \| 'session' }` |
+| `close()` | Remove the modal without clearing state |
+| `reset()` | Clear token, trusted cookie, and reset the widget |
+| `destroy()` | Reset and close |
+| `isVerified()` | Inspect current verified state |
+| `getToken()` | Read the last token seen by the instance |
 
 Main config areas:
 
-- `modal`: copy, classes, default style injection, custom CSS
-- `cookie`: name, scope, lifetime, SameSite, secure flag, `trustClientCookie`
-- `verify`: backend endpoint, timeout, retries, headers, expected status
-- `statusCheck`: optional preflight request before render
-- `integrity`: global checks, challenge presence enforcement, removal monitoring
-- `render`: custom renderer hook
+| Area | Controls |
+|---|---|
+| `modal` | Copy, classes, default style injection, custom CSS |
+| `cookie` | Name, scope, lifetime, SameSite, secure flag, `trustClientCookie` |
+| `verify` | Backend endpoint, timeout, retries, headers, expected status |
+| `statusCheck` | Optional preflight request before render |
+| `integrity` | Global checks, challenge presence enforcement, removal monitoring |
+| `render` | Custom renderer hook |
+
+---
+
+## How It Works
+
+### Verification Flow
+
+```mermaid
+sequenceDiagram
+    participant User
+    participant App
+    participant CaptchaShield
+    participant Turnstile
+    participant Backend
+
+    User->>App: Request protected action
+    App->>CaptchaShield: open()
+    alt already verified in session or trusted cookie
+        CaptchaShield-->>App: already-verified
+    else needs challenge
+        CaptchaShield->>Turnstile: load script and render widget
+        Turnstile-->>CaptchaShield: token
+        CaptchaShield->>Backend: POST verify(token)
+        alt accepted
+            Backend-->>CaptchaShield: 2xx
+            CaptchaShield-->>App: rendered / verified
+        else rejected
+            Backend-->>CaptchaShield: non-2xx
+            CaptchaShield->>Turnstile: reset widget
+            CaptchaShield-->>App: onError(...)
+        end
+    end
+```
+
+### Verified State
+
+```mermaid
+stateDiagram-v2
+    [*] --> Unverified
+    Unverified --> SessionVerified: verify success
+    SessionVerified --> Unverified: reset() or destroy()
+    SessionVerified --> TrustedCookieVerified: trustClientCookie enabled
+    TrustedCookieVerified --> Unverified: cookie cleared or expired
+```
+
+### Package Responsibilities
+
+```mermaid
+flowchart LR
+    A["App code"] --> B["createCaptchaShield(config)"]
+    B --> C["Script loading and validation"]
+    B --> D["Modal or custom renderer"]
+    B --> E["Verification request handling"]
+    B --> F["Session and optional trusted cookie state"]
+    B --> G["Lifecycle cleanup and reset"]
+```
+
+---
+
+## What The Package Handles
+
+- Turnstile script loading from the official Cloudflare host
+- Built-in modal rendering with sane defaults
+- Custom render hook support
+- Token verification requests with timeout and retry handling
+- Widget reset and cleanup after reject or error
+- Optional status precheck before rendering
+- Challenge presence and removal monitoring
+- Typed error callbacks
+
+## What Your Backend Still Must Handle
+
+- Final authorization decisions
+- Turnstile secret management
+- Token verification against Cloudflare `siteverify`
+- Route protection and abuse policy
+- Rate limiting, IP policy, and application-specific trust decisions
+
+---
+
+## Demo Lab
+
+> The visuals below are from the local demo page in [`demo/`](demo). They show one testing surface only and do not represent every possible integration style or a recommended production design.
+
+<p align="center">
+  <img src="docs/assets/demo-flow.gif" alt="Demo flow" width="860" />
+</p>
+
+<p align="center">
+  <img src="docs/assets/demo-overview.png" alt="Demo overview" width="860" />
+</p>
+
+<p align="center">
+  <img src="docs/assets/demo-modal.png" alt="Default modal screenshot" width="460" />
+  <img src="docs/assets/demo-custom.png" alt="Custom renderer screenshot" width="860" />
+</p>
+
+The demo page includes:
+
+- Default modal and custom renderer flows
+- Local mock Turnstile behavior
+- Local verify and status endpoints
+- Session-only versus trusted-cookie behavior
+- Tamper simulation
+- Live config preview and event log
+
+### Demo internals
+
+```mermaid
+flowchart TB
+    UI["demo/index.html"] --> APP["demo/app.js"]
+    APP --> LIB["dist/index.mjs"]
+    APP --> MOCK["Mock Turnstile widget"]
+    APP --> STATUS["/api/status"]
+    APP --> VERIFY["/api/verify"]
+    STATUS --> SERVER["scripts/serve-demo.mjs"]
+    VERIFY --> SERVER
+```
+
+---
+
+## Technologies
+
+- TypeScript for the package surface and internal logic
+- Cloudflare Turnstile as the challenge provider
+- `tsup` for package bundling
+- `vitest` with `jsdom` for unit and behavior tests
+- `eslint` for static linting
+- A small Node HTTP server for the local demo lab
 
 ## Scripts
 
-- `npm run dev` - tsup watch
-- `npm run build` - build ESM, CJS, and type declarations
-- `npm run test` - Vitest
-- `npm run lint` - ESLint
-- `npm run typecheck` - TypeScript no-emit check
-- `npm run demo` - build and start the local demo page
-- `npm run demo:serve` - start the demo server without rebuilding
+| Command | Description |
+|---|---|
+| `npm run build` | Build ESM, CJS, and type declarations |
+| `npm run dev` | tsup watch mode |
+| `npm test` | Vitest |
+| `npm run lint` | ESLint |
+| `npm run typecheck` | TypeScript no-emit check |
+| `npm run demo` | Build and start the local demo page |
+| `npm run demo:serve` | Start the demo server without rebuilding |
+
+---
 
 ## Roadmap
 
@@ -305,6 +330,8 @@ Main config areas:
 - Better analytics hooks for render, verify success, reject, timeout, and tamper events
 - Framework adapters for Next.js, Express, edge runtimes, and Laravel
 - A small end-to-end browser test suite for demo and package regression checks
+
+---
 
 ## License
 
